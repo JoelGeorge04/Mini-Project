@@ -27,6 +27,12 @@ class AuthRoutes implements Route {
             validationMiddleware(LoginDTO, 'body'),
             this.authController.login
         );
+
+        this.router.post(   
+            `${this.path}/verify-email/:token`,
+            // validationMiddleware(LoginDTO, 'body'),
+            this.authController.verifyEmail
+        );
     }
 
 }

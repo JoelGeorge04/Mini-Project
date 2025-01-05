@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/apiService';  // API call service
+import { login } from '../../services/apiService'; // API call service
+import './login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // State for popup
   const navigate = useNavigate();
 
   // Handle form submission for login
@@ -19,7 +21,15 @@ const Login = () => {
       if (response.message === 'User Logged In successfully') {
         // Save the token to localStorage
         localStorage.setItem('token', response.data.token);
-        navigate('/dashboard'); // Redirect to the dashboard after successful login
+
+        // Show success popup
+        setShowSuccessPopup(true);
+
+        // Navigate to the dashboard after a short delay
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+          navigate('/dashboard');
+        }, 2000);
       } else {
         alert('Login failed!');
       }
@@ -53,7 +63,16 @@ const Login = () => {
           {loading ? 'Logging In...' : 'Login'}
         </button>
       </form>
-      <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+      <p>
+        Don’t have an account? <a href="/signup">Sign Up</a>
+      </p>
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="popup">
+          <p>Logged in successfully!</p>
+        </div>
+      )}
     </div>
   );
 };

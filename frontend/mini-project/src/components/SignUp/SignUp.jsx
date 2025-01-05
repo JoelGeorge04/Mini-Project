@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signUp } from '../../services/apiService';  // API call service
+import './signup.css'; // Link to the signup CSS file
 
 const SignUp = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -17,7 +18,7 @@ const SignUp = () => {
       const response = await signUp(formData);
 
       if (response.message === 'User created successfully') {
-        navigate('/login');             // Redirect to login after successful signup
+        navigate('/login');  // Redirect to login after successful signup
       } else {
         alert('Registration failed!');
       }

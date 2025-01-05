@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/App.jsx
 
 import React from 'react';

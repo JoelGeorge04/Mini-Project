@@ -31,6 +31,15 @@ class AuthController{
         }
     }
 
+    public verifyEmail = async(req:Request,res:Response,next:NextFunction)=>{
+        try{
+            const data = await this.authService.verifyEmail(req.params.token)
+            res.status(200).json({message:"Verified",data})
+        }catch(err:any){ 
+            res.status(err.status ?? 500).json({message:err.message ?? "Something went wrong"})
+        }
+    }
+
 
 }
 
