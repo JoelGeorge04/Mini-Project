@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';  // Import CORS
 import sequelize from './models';
 import AuthRoutes from './routes/auth.routes';
+import PostRoutes from './routes/post.routes';
 
 const app = express();
 
@@ -16,7 +17,7 @@ const port = process.env.PORT || 3000;
 // Set up the routes
 app.use('/api', new AuthRoutes().router);
 
-const routes = [new AuthRoutes()];
+const routes = [new AuthRoutes(), new PostRoutes()];
 
 routes.forEach((route) => {
   app.use('/api', route.router);

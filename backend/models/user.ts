@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional} from 'sequelize'
+import { DataTypes, Model, Optional } from 'sequelize'
 import sequelize from './index';
 import { Post } from './post';
 
@@ -11,12 +11,12 @@ export interface UserAttributes {
     createdAt?: Date;
     updatedAt?: Date;
     deletedAt?: Date;
-    
+
 }
 
-export interface UserInput extends Optional<UserAttributes,| 'id'| 'isVerified'> {}
+export interface UserInput extends Optional<UserAttributes, | 'id' | 'isVerified'> { }
 
-export class User extends Model<UserAttributes,UserInput> implements UserAttributes {
+export class User extends Model<UserAttributes, UserInput> implements UserAttributes {
     public id!: number;
     public name!: string;
     public email!: string;
@@ -66,5 +66,7 @@ User.init({
     paranoid: true,         //temporarily delete the data soft delete
 });
 
-User.hasMany(Post)
-Post.belongsTo(User,{foreignKey: 'userId'})
+//Relational logic for database
+
+User.hasMany(Post, { foreignKey: 'userId' })
+Post.belongsTo(User, { foreignKey: 'userId' })

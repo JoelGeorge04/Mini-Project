@@ -13,22 +13,22 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       // Making the POST request to the backend API
       const response = await login(formData);
-
+  
       if (response.message === 'User Logged In successfully') {
         // Save the token to localStorage
         localStorage.setItem('token', response.data.token);
-
+  
         // Show success popup
         setShowSuccessPopup(true);
-
-        // Navigate to the dashboard after a short delay
+  
+        // Navigate to the home page after a short delay
         setTimeout(() => {
           setShowSuccessPopup(false);
-          navigate('/dashboard');
+          navigate('/home'); // Redirect to HomePage ("/home" route)
         }, 2000);
       } else {
         alert('Login failed!');
@@ -40,7 +40,7 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="login-container">
       <h2>Login</h2>

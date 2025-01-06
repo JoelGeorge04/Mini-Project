@@ -56,6 +56,9 @@ class AuthService {
 
 
     public async verifyEmail(token: string): Promise<LoginResponse> {
+
+        //verifying the jwt token
+
         const res = jwt.verify(token, process.env.JWT_SECRET as string) as UserData;
 
         const user = await User.update({

@@ -112,20 +112,48 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Popup Styling */
 .popup {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #ffffff;
-  padding: 15px 20px;
-  border-radius: 8px;
-  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  animation: scaleUp 0.3s ease-out;
+  inset: 0; 
+  display: grid;
+  border-radius: 8px; 
+  place-items: center; 
+  background-color: rgba(0, 0, 0, 0.5); 
   z-index: 1000;
 }
+
+.popup p {
+  background-color: #28a745;
+  color: #fff; 
+  padding: 15px 20px; 
+  border-radius: 8px; 
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.2); 
+  text-align: center; 
+  font-size: 16px; 
+  font-weight: bold;
+  animation: fadeInOut 3s ease-in-out;
+}
+
+/* Keyframe animation for fade-in-out effect */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
 
 @keyframes scaleUp {
   from {
@@ -138,11 +166,7 @@ a:hover {
   }
 }
 
-.popup p {
-  font-size: 1rem;
-  color: #28a745;
-  margin: 0;
-}
+
 
 input, button {
   box-sizing: border-box;

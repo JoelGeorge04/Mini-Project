@@ -1,20 +1,25 @@
-import { DataTypes, Model} from 'sequelize'
+import { DataTypes, Model, Optional } from 'sequelize'
 import sequelize from './index';
 
 export interface PostAttributes {
     id: number;
     title: string;
     description: string;
+    userId: number;
     createdAt?: Date;
     updatedAt?: Date;
     deletedAt?: Date;
-    
+
 }
 
-export class Post extends Model<PostAttributes> implements PostAttributes {
-    public id!: number;
+export interface PostInput extends Optional<PostAttributes, | "id"> { }     //is now an optional parameter
+
+
+export class Post extends Model<PostAttributes, PostInput> implements PostAttributes {
+    public id!: number;                 
     public title!: string;
     public description!: string;
+    public userId!: number;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
     public readonly deletedAt!: Date;
@@ -35,7 +40,11 @@ Post.init({
         unique: true,
         allowNull: false
     },
-    
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+
     createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
