@@ -113,3 +113,28 @@ body {
 input, button {
   box-sizing: border-box;
 }
+
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+  animation: fade-out 1s ease-in-out 4s forwards; /* Optional fade-out effect */
+}
+
+.success-message {
+  color: green;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+  animation: fade-out 1s ease-in-out 4s forwards; /* Optional fade-out effect */
+}
+
+/* Optional fade-out effect for both error and success */
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+

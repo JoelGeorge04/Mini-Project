@@ -1,34 +1,58 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signUp } from '../../services/apiService';  // API call service
-import './signup.css'; // Link to the signup CSS file
+import { signUp } from '../../services/apiService'; 
+import './signup.css'; 
 
 const SignUp = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null); 
+  const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
 
-  // Handle form submission for signup
+
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null); 
+    setSuccess(null); 
+  
+    // Frontend validation for password length
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Making the POST request to the backend API
       const response = await signUp(formData);
-
-      if (response.message === 'User created successfully') {
-        navigate('/login');  // Redirect to login after successful signup
+  
+      if (response.message === 'User already exists') {
+        setError('Error: User with this email already exists.');
+      } else if (response.message === 'User created successfully') {
+        setSuccess('Signup successful! Please check your email for verification.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
       } else {
-        alert('Registration failed!');
+        setError('Error: Registration failed. Please try again.');
       }
     } catch (error) {
-      console.error('Signup error:', error);
-      alert('Signup failed. Please try again.');
+      // Logging the actual error to understand the underlying issue
+      console.error('Error during sign up:', error);
+      
+      // Check if the error contains a message and display it
+      if (error instanceof Error) {
+        setError(`Error: ${error.message || 'An unexpected error occurred. Please try again later.'}`);
+      } else {
+        setError('Error: An unexpected error occurred. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="signup-container">
@@ -59,9 +83,13 @@ const SignUp = () => {
           {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
-      <p>Already have an account? <a href="/login">Login</a></p>
+      {error && <p className="error-message">{error}</p>} {/* Display error messages */}
+      {success && <p className="success-message">{success}</p>} {/* Display success messages */}
+      <p>
+        Already have an account? <a href="/login">Login</a>
+      </p>
     </div>
   );
 };
 
-export default SignUp;
+export default SignUp; 

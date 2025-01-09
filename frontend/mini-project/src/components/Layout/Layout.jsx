@@ -10,13 +10,13 @@ const Layout = ({ children }) => {
   const location = useLocation();
 
   // Check if the current path is login or signup
-  const showHeader = location.pathname === '/login' || location.pathname === '/signup';
+  const showHeader = location.pathname === '/login' || location.pathname === '/signup'|| location.pathname === '/';
 
   return (
     <div>
       {showHeader && (
         <header>
-          <h1>SnapTrack</h1>
+          <h1>Booking.Go</h1>
         </header>
       )}
       <main>{children}</main>

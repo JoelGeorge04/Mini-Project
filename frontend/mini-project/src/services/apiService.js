@@ -4,7 +4,6 @@ const API_URL = 'http://localhost:3000/api/auth'; // Backend API URL
 
 // Sign up API call
 export const signUp = async (formData) => {
-  // eslint-disable-next-line no-useless-catch
   try {
     const response = await fetch(`${API_URL}/signup`, {
       method: 'POST',
@@ -15,18 +14,20 @@ export const signUp = async (formData) => {
     });
 
     if (!response.ok) {
-      throw new Error('Sign up failed!');
+      // Check for a specific error message returned from backend
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Sign up failed!');
     }
 
     return await response.json(); // Return the response data
   } catch (error) {
-    throw error;
+    console.error('Error during sign up:', error);
+    throw error; // Re-throw the error so it can be handled elsewhere
   }
 };
 
 // Login API call
 export const login = async (formData) => {
-  // eslint-disable-next-line no-useless-catch
   try {
     const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
@@ -37,11 +38,14 @@ export const login = async (formData) => {
     });
 
     if (!response.ok) {
-      throw new Error('Login failed!');
+      // Check for a specific error message returned from backend
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Login failed!');
     }
 
     return await response.json(); // Return the response data
   } catch (error) {
-    throw error;
+    console.error('Error during login:', error);
+    throw error; // Re-throw the error so it can be handled elsewhere
   }
 };

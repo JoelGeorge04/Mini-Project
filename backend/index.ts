@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';  // Import CORS
+import cors from 'cors';  
 import sequelize from './models';
 import AuthRoutes from './routes/auth.routes';
 import PostRoutes from './routes/post.routes';

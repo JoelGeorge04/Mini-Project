@@ -8,6 +8,10 @@ import sendEmail from '../utils/sendEmail';
 
 class AuthService {
 
+
+//signup
+
+
     public async Signup(data: SignupDTO): Promise<UserData> {
         const user = await User.findOne({ where: { email: data.email } });      //check user by email
         if (user) {
@@ -30,6 +34,10 @@ class AuthService {
         sendEmail(newUser.email, newUser.name, token);       //send email for verification
         return result;
     }
+
+
+//login
+
 
     public async login(data: LoginDTO): Promise<LoginResponse> {
         const user = await User.findOne({ where: { email: data.email } });      //check user by email

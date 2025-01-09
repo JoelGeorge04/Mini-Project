@@ -171,3 +171,15 @@ a:hover {
 input, button {
   box-sizing: border-box;
 }
+
+.error-message {
+  color: #d32f2f;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  color: #388e3c;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
