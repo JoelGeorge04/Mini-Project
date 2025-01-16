@@ -4,7 +4,7 @@ module.exports = {      //exporting the data from this file
   "development": {
     "username": process.env.DB_USER, 
     "password": process.env.DB_PASS, 
-    "database": process.env.DB_NAME,
+    "database": process.env.DB_NAME,    //Db connection
     "host": "127.0.0.1",
     "dialect": "postgres"
   },
