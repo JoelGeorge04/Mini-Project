@@ -1,10 +1,14 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
 
 const useLogin = () => {
 	const [loading, setLoading] = useState(false);
 	const { setAuthUser } = useAuthContext();
+	const navigate = useNavigate();
+
 
 	const login = async (username, password) => {
 		const success = handleInputErrors(username, password);
@@ -31,9 +35,38 @@ const useLogin = () => {
 		}
 	};
 
-	return { loading, login };
+	// Google login process
+	const googlelogin = async (token) => {
+		try {
+			const res = await fetch("/api/auth/google/callback", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ token }),
+			});
+
+			const data = await res.json();
+			if (data.error) {
+				throw new Error(data.error);
+			}
+			localStorage.setItem("user", JSON.stringify(data.user));
+			setAuthUser(data.user); 
+			navigate("/"); 
+		} catch (error) {
+			console.error("Google login error:", error);
+		}
+	};
+
+
+
+	return { loading, login, googlelogin };
+
+
 };
 export default useLogin;
+
+
 
 function handleInputErrors(username, password) {
 	if (!username || !password) {

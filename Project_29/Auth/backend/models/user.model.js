@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: function () {
-        return !this.password;  // googleId is required only if no password is provided
+        return !this.password; // googleId is required only if no password is provided
       },
     },
     fullName: {
@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
+      unique: true, // Ensure unique usernames
     },
     profilePic: {
       type: String,
@@ -24,8 +25,16 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: function () {
-        return !this.googleId;  // Password is required only if no googleId is provided
+        return !this.googleId; // Password is required only if no googleId is provided
       },
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null, // Token for password reset
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null, // Expiry time for the reset token
     },
   },
   { timestamps: true }

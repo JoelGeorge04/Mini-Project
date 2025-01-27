@@ -4,13 +4,14 @@ import useLogin from "../../hooks/useLogin";
 import NavbarAuth from "../../components/Navbar/navAuth";
 import ReCAPTCHA from "react-google-recaptcha";
 import toast from "react-hot-toast";
+import { GoogleLogin } from "@react-oauth/google";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [recaptchaValue, setRecaptchaValue] = useState(null); 	// To store the reCAPTCHA response
+  const [recaptchaValue, setRecaptchaValue] = useState(null); // To store the reCAPTCHA response
 
-  const { loading, login } = useLogin();
+  const { loading, login, googlelogin } = useLogin();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,11 +26,22 @@ const Login = () => {
     await login(username, password);
   };
 
+  // Google sign-in success handler
+  const handleGoogleSuccess = (response) => {
+    const { credential } = response; // The token received from Google
+    googlelogin(credential);
+  };
+
+  const handleGoogleFailure = (error) => {
+    console.error("Google Login Error:", error);
+    toast.error("Google Sign-In failed. Please try again.");
+  };
+
   return (
     <>
       <NavbarAuth />
-      <div className="flex flex-col items-center justify-center min-w-[384px] mx-auto py-8 px-4">
-        <div className="w-full max-w-md p-8 rounded-xl shadow-lg bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-0 border border-gray-600 transition-all duration-300 ease-in-out hover:bg-gray-850 hover:shadow-2xl hover:border-yellow-400">
+      <div className="flex flex-col items-center justify-center min-w-[484px] mx-auto py-8 px-4 mt-24">
+        <div className=" w-full max-w-md p-8 rounded-xl shadow-lg bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-0 border border-gray-600 transition-all duration-300 ease-in-out hover:bg-gray-850 hover:shadow-2xl hover:border-yellow-400">
           <h1 className="text-3xl font-semibold text-center text-gray-300 mb-6">
             Login to{" "}
             <span className="text-blue-500 hover:text-red-400 transition-all duration-300 ease-in-out">
@@ -65,8 +77,8 @@ const Login = () => {
             {/* Add reCAPTCHA widget */}
             <div className="mb-4 p-2">
               <ReCAPTCHA
-                sitekey="6Lepx7kqAAAAAGQT-nFBQf6UadrXizjZYCIlcL-o" 
-                onChange={(value) => setRecaptchaValue(value)} 
+                sitekey="6Lepx7kqAAAAAGQT-nFBQf6UadrXizjZYCIlcL-o"
+                onChange={(value) => setRecaptchaValue(value)}
               />
             </div>
 
@@ -81,12 +93,22 @@ const Login = () => {
                 className="btn btn-block btn-sm mt-4 transition-all duration-300 ease-in-out hover:bg-blue-400 hover:text-blue-800"
                 disabled={loading}
               >
-                {loading ? <span className="loading loading-spinner "></span> : "Login"}
+                {loading ? <span className="loading loading-spinner"></span> : "Login"}
               </button>
             </div>
           </form>
+          {/* Google Sign-In Button */}
+          <div className="mt-4">
+            <p className="text-center mb-4">Or sign up with Google</p>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleFailure}
+              useOneTap
+            />
+          </div>
         </div>
       </div>
+
     </>
   );
 };

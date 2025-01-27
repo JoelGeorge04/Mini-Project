@@ -22,39 +22,49 @@ const Navbar = () => {
 
   return (
     <div className="navbar bg-blue-600 shadow-md p-3.5 fixed top-0 left-0 w-full z-50">
-      <div className="flex-1">
-        <a className="btn btn-ghost normal-case text-3xl text-white">BookMyResource</a>
-      </div>
-      <div className="flex-none gap-2">
-        <div className="form-control">
-          <input type="text" placeholder="Search" className="input input-bordered w-24 md:w-auto" />
+      {/* Left section */}
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center space-x-4">
+          {/* Display user's name */}
+          {/* App title */}
+          <a className="btn btn-ghost normal-case text-3xl text-white">
+            BookMyResource
+          </a>
+          {authUser && (
+            <span className="text-gold text-lg margin-left:100px" style={{ marginLeft: '1070px', cursor:'pointer',display: 'block', textAlign: 'right' }}
+              onMouseEnter={(e) => (e.target.style.color = 'yellow')} 
+              onMouseLeave={(e) => (e.target.style.color = 'white')} >{`${authUser.fullName}`}</span>
+          )}
         </div>
-        <div className="dropdown dropdown-end">
-          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
-            <div className="w-10 rounded-full">
-              <img alt="Profile Avatar" src={profilePic} />
+        {/* Right section */}
+        <div className="flex items-center gap-2">
+          <div className="dropdown dropdown-end">
+            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar w-16 h-16"  >
+              <div className="w-12 rounded-full" >
+                <img alt="Profile Avatar" src={profilePic} />
+              </div>
             </div>
+            <ul
+              tabIndex={0}
+              className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[4] mt-3 w-52 p-2 shadow"
+            >
+              <li>
+                <a className="justify-between">
+                  Profile
+                  <span className="badge">New</span>
+                </a>
+              </li>
+              <li><a>Settings</a></li>
+              <li>
+                <button
+                  className="btn btn-outline btn-error text-white w-full h-5 mt-3 p-2 rounded-lg transition duration-300 ease-in-out transform hover:bg-red-400 hover:text-white hover:scale-95"
+                  onClick={handleLogout} // Attach logout handler
+                >
+                  Logout
+                </button>
+              </li>
+            </ul>
           </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[4] mt-3 w-52 p-2 shadow"
-          >
-            <li>
-              <a className="justify-between">
-                Profile
-                <span className="badge">New</span>
-              </a>
-            </li>
-            <li><a>Settings</a></li>
-            <li>
-              <button
-                className="btn btn-outline btn-error text-white w-full h-5 mt-3 p-2 rounded-lg transition duration-300 ease-in-out transform hover:bg-red-400 hover:text-white hover:scale-95"
-                onClick={handleLogout} // Attach logout handler
-              >
-                Logout
-              </button>
-            </li>
-          </ul>
         </div>
       </div>
     </div>

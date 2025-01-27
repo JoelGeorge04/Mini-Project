@@ -1,12 +1,12 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom"; 
 
 const useSignup = () => {
   const [loading, setLoading] = useState(false);
   const { setAuthUser } = useAuthContext();
-  const navigate = useNavigate(); // Initialize navigate hook
+  const navigate = useNavigate();
 
   const signup = async ({ fullName, username, password, confirmPassword }) => {
     const success = handleInputErrors({ fullName, username, password, confirmPassword });
@@ -49,10 +49,9 @@ const useSignup = () => {
       if (data.error) {
         throw new Error(data.error);
       }
-      // Save the user and token in local storage or state management
       localStorage.setItem("user", JSON.stringify(data.user));
-      setAuthUser(data.user); // Set the user data in context
-      navigate("/"); // Redirect to homepage or desired route
+      setAuthUser(data.user);
+      navigate("/"); 
     } catch (error) {
       console.error("Google login error:", error);
     }

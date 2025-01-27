@@ -4,7 +4,7 @@ import NavbarAuth from "../../components/Navbar/navAuth";
 import useSignup from "../../hooks/useSignup";
 import ReCAPTCHA from "react-google-recaptcha";
 import toast from "react-hot-toast";
-import { GoogleLogin } from "@react-oauth/google"; // Import GoogleLogin component
+import { GoogleLogin } from "@react-oauth/google";
 
 const SignUp = () => {
   const [inputs, setInputs] = useState({
@@ -72,7 +72,7 @@ const SignUp = () => {
               </label>
               <input
                 type="text"
-                placeholder="Email-Address"
+                placeholder="Email"
                 className="w-full input input-bordered h-10 px-3 rounded-md"
                 value={inputs.username}
                 onChange={(e) => setInputs({ ...inputs, username: e.target.value })}

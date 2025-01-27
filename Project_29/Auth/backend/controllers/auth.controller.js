@@ -1,9 +1,10 @@
 import User from "../models/user.model.js";
 import generateTokenAndSetCookie from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
+import { oauth2Client } from "../utils/googleOAuth.js";
 import sendEmail from "../utils/sendMail.js";
 
-
+// Signup user
 export const signup = async (req, res) => {
 	try {
 		const { fullName, username, password, confirmPassword } = req.body;
@@ -15,7 +16,7 @@ export const signup = async (req, res) => {
 		const user = await User.findOne({ username });
 
 		if (user) {
-			return res.status(400).json({ error: "Username already exists" });
+			return res.status(400).json({ error: "User already exists" });
 		}
 
 		const salt = await bcrypt.genSalt(10);
@@ -37,7 +38,7 @@ export const signup = async (req, res) => {
 
 			// Send a welcome email
 			await sendEmail(newUser.username, newUser.fullName);
-			
+
 			res.status(201).json({
 				_id: newUser._id,
 				fullName: newUser.fullName,
@@ -53,6 +54,7 @@ export const signup = async (req, res) => {
 	}
 };
 
+// Login Controller
 export const login = async (req, res) => {
 	try {
 		const { username, password } = req.body;
@@ -72,11 +74,12 @@ export const login = async (req, res) => {
 			profilePic: user.profilePic,
 		});
 	} catch (error) {
-		console.log("Error in login controller", error.message);
+		console.error("Error in login controller", error.message);
 		res.status(500).json({ error: "Internal Server Error" });
 	}
 };
 
+// Logout user
 export const logout = (req, res) => {
 	try {
 		res.cookie("jwt", "", { maxAge: 0 });
@@ -87,38 +90,122 @@ export const logout = (req, res) => {
 	}
 };
 
-// Google OAuth handlers
-export const googleCallback = async (req, res) => {
-  try {
-    const { id, displayName, emails, photos } = req.user;
-    const email = emails[0].value;
-    const profilePic = photos[0]?.value;
 
-    // Check if user already exists in the database using the Google ID
-    let user = await User.findOne({ googleId: id });
+// Google login/signup 
+export const handleGoogleOAuth = async (token, res) => {
+	try {	
+	  const ticket = await oauth2Client.verifyIdToken({
+		idToken: token,
+		audience: process.env.GOOGLE_CLIENT_ID,
+	  });
+  
+	  const payload = ticket.getPayload();
+  
+	  // Check if the user already exists based on Google ID or email (username)
+	  let user = await User.findOne({ $or: [{ googleId: payload.sub }, { username: payload.email }] });
+  
+	  if (!user) {
+		user = new User({
+		  googleId: payload.sub,
+		  fullName: payload.name,
+		  username: payload.email,
+		  profilePic: payload.picture,
+		});
+  
+		// Send a welcome email to the new user logged in via Google
+		await sendEmail(user.username, user.fullName);
+		await user.save();
+	  }
+  
+	  // Generate token and set the cookie
+	  const jwtToken = generateTokenAndSetCookie(user._id, res);
+	  
+	  return { user, jwtToken };
+	} catch (error) {
+	  throw new Error("Internal server error");
+	}
+  };
 
-    if (!user) {
-      // If user doesn't exist, create a new user
-      user = new User({
-        googleId: id,
-        fullName: displayName,
-        username: email,
-        profilePic: profilePic,
-      });
 
-      await user.save(); // Save new user to the database
-    }
+// Forgot Password Controller
+export const forgotPassword = async (req, res) => {
+	try {
+		const { email } = req.body;
 
-    generateTokenAndSetCookie(user._id, res);
+		// Find user by email
+		const user = await User.findOne({ email });
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
 
-    // Send a welcome email to the new user logged in via Google
-    await sendEmail(user.username, user.fullName); 
+		// Generate a reset token
+		const resetToken = crypto.randomBytes(32).toString("hex");
 
-    res.redirect("http://localhost:3000/");
+		// Hash the reset token and set expiry (15 minutes)
+		const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+		const resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes from now
 
-  } catch (error) {
-    console.error("Error in Google callback", error.message);
+		// Save token and expiry to the user's record
+		user.resetPasswordToken = resetTokenHash;
+		user.resetPasswordExpires = resetTokenExpiry;
+		await user.save();   //saved to Db
 
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+		// Create a reset URL
+		const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
+
+		// Send reset email
+		const emailContent = `
+		<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+		  <h2>Password Reset Request</h2>
+		  <p>Hello ${user.fullName},</p>
+		  <p>You requested a password reset. Click the link below to reset your password:</p>
+		  <a href="${resetUrl}" target="_blank" style="color: #4CAF50;">Reset Password</a>
+		  <p>This link will expire in 15 minutes.</p>
+		  <p>If you did not request this, please ignore this email.</p>
+		  <br>
+		  <p>Best regards,<br>The BookMyResource Team</p>
+		</div>
+	  `;
+
+		await sendEmail(user.email, emailContent);
+
+		res.status(200).json({ message: "Password reset link sent to your email." });
+	} catch (error) {
+		console.error("Error in forgotPassword controller:", error.message);
+		res.status(500).json({ error: "Internal Server Error" });
+	}
+};
+
+// Reset Password Controller
+export const resetPassword = async (req, res) => {
+	try {
+		const { token, password } = req.body;
+
+		// Hash the token
+		const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+		// Find user with the hashed token and check token validity
+		const user = await User.findOne({
+			resetPasswordToken: hashedToken,
+			resetPasswordExpires: { $gt: Date.now() }, // Ensure token is not expired
+		});
+
+		if (!user) {
+			return res.status(400).json({ error: "Invalid or expired token" });
+		}
+
+		// Update user's password
+		user.password = await bcrypt.hash(password, 10);
+
+		// Clear reset token and expiry
+		user.resetPasswordToken = undefined;
+		user.resetPasswordExpires = undefined;
+
+		await user.save();
+
+		res.status(200).json({ message: "Password reset successful." });
+	} catch (error) {
+		console.error("Error in resetPassword controller:", error.message);
+		res.status(500).json({ error: "Internal Server Error" });
+	}
 };
