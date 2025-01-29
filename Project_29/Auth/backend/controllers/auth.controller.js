@@ -3,6 +3,8 @@ import generateTokenAndSetCookie from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
 import { oauth2Client } from "../utils/googleOAuth.js";
 import sendEmail from "../utils/sendMail.js";
+import passResetMail from '../utils/passResetMail.js';
+
 
 // Signup user
 export const signup = async (req, res) => {
@@ -93,119 +95,112 @@ export const logout = (req, res) => {
 
 // Google login/signup 
 export const handleGoogleOAuth = async (token, res) => {
-	try {	
-	  const ticket = await oauth2Client.verifyIdToken({
-		idToken: token,
-		audience: process.env.GOOGLE_CLIENT_ID,
-	  });
-  
-	  const payload = ticket.getPayload();
-  
-	  // Check if the user already exists based on Google ID or email (username)
-	  let user = await User.findOne({ $or: [{ googleId: payload.sub }, { username: payload.email }] });
-  
-	  if (!user) {
-		user = new User({
-		  googleId: payload.sub,
-		  fullName: payload.name,
-		  username: payload.email,
-		  profilePic: payload.picture,
-		});
-  
-		// Send a welcome email to the new user logged in via Google
-		await sendEmail(user.username, user.fullName);
-		await user.save();
-	  }
-  
-	  // Generate token and set the cookie
-	  const jwtToken = generateTokenAndSetCookie(user._id, res);
-	  
-	  return { user, jwtToken };
-	} catch (error) {
-	  throw new Error("Internal server error");
-	}
-  };
-
-
-// Forgot Password Controller
-export const forgotPassword = async (req, res) => {
 	try {
-		const { email } = req.body;
+		const ticket = await oauth2Client.verifyIdToken({
+			idToken: token,
+			audience: process.env.GOOGLE_CLIENT_ID,
+		});
 
-		// Find user by email
-		const user = await User.findOne({ email });
+		const payload = ticket.getPayload();
+
+		// Check if the user already exists based on Google ID or email (username)
+		let user = await User.findOne({ $or: [{ googleId: payload.sub }, { username: payload.email }] });
+
 		if (!user) {
-			return res.status(404).json({ error: "User not found" });
+			user = new User({
+				googleId: payload.sub,
+				fullName: payload.name,
+				username: payload.email,
+				profilePic: payload.picture,
+			});
+
+			// Send a welcome email to the new user logged in via Google
+			await sendEmail(user.username, user.fullName);
+			await user.save();
 		}
 
-		// Generate a reset token
-		const resetToken = crypto.randomBytes(32).toString("hex");
+		// Generate token and set the cookie
+		const jwtToken = generateTokenAndSetCookie(user._id, res);
 
-		// Hash the reset token and set expiry (15 minutes)
-		const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
-		const resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes from now
-
-		// Save token and expiry to the user's record
-		user.resetPasswordToken = resetTokenHash;
-		user.resetPasswordExpires = resetTokenExpiry;
-		await user.save();   //saved to Db
-
-		// Create a reset URL
-		const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
-
-		// Send reset email
-		const emailContent = `
-		<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-		  <h2>Password Reset Request</h2>
-		  <p>Hello ${user.fullName},</p>
-		  <p>You requested a password reset. Click the link below to reset your password:</p>
-		  <a href="${resetUrl}" target="_blank" style="color: #4CAF50;">Reset Password</a>
-		  <p>This link will expire in 15 minutes.</p>
-		  <p>If you did not request this, please ignore this email.</p>
-		  <br>
-		  <p>Best regards,<br>The BookMyResource Team</p>
-		</div>
-	  `;
-
-		await sendEmail(user.email, emailContent);
-
-		res.status(200).json({ message: "Password reset link sent to your email." });
+		return { user, jwtToken };
 	} catch (error) {
-		console.error("Error in forgotPassword controller:", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
+		throw new Error("Internal server error");
 	}
 };
 
-// Reset Password Controller
+// Forgot Password
+export const forgotPassword = async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate reset token and expiry
+    const resetToken = generateTokenAndSetCookie(user._id, res, 15 * 60); // 15 minutes
+    const resetTokenExpiry = Date.now() + 15 * 60 * 1000; // Set expiry
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpiry;
+    await user.save();
+
+    // Generate reset URL
+	const resetUrl = `http://localhost:4001/reset-password/${encodeURIComponent(resetToken)}`;
+	await passResetMail(user.username, user.fullName, resetUrl);
+
+    res.status(200).json({ message: "Password reset link sent to your email." });
+  } catch (error) {
+    console.error("Forgot Password Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// Reset Password
 export const resetPassword = async (req, res) => {
-	try {
-		const { token, password } = req.body;
+  try {
+    const { token, password } = req.body;
 
-		// Hash the token
-		const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, // Check if token is valid
+    });
 
-		// Find user with the hashed token and check token validity
-		const user = await User.findOne({
-			resetPasswordToken: hashedToken,
-			resetPasswordExpires: { $gt: Date.now() }, // Ensure token is not expired
-		});
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
 
-		if (!user) {
-			return res.status(400).json({ error: "Invalid or expired token" });
-		}
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
 
-		// Update user's password
-		user.password = await bcrypt.hash(password, 10);
+    await user.save();
 
-		// Clear reset token and expiry
-		user.resetPasswordToken = undefined;
-		user.resetPasswordExpires = undefined;
+    res.status(200).json({ message: "Password reset successful." });
+  } catch (error) {
+    console.error("Reset Password Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
-		await user.save();
+// Validate Reset Token
+export const resetPasswordPage = async (req, res) => {
+  const { token } = req.params;
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
 
-		res.status(200).json({ message: "Password reset successful." });
-	} catch (error) {
-		console.error("Error in resetPassword controller:", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+
+    res.status(200).json({ message: "Valid token." });
+  } catch (error) {
+    console.error("Validate Reset Token Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };

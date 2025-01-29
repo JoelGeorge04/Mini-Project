@@ -10,8 +10,10 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [recaptchaValue, setRecaptchaValue] = useState(null); // To store the reCAPTCHA response
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState(""); // Email for password reset
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false); // Toggle modal visibility
 
-  const { loading, login, googlelogin } = useLogin();
+  const { loading, login, googlelogin, forgotPassword } = useLogin();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,6 +26,18 @@ const Login = () => {
 
     // Proceed with the login
     await login(username, password);
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+      toast("Please enter your email.");
+      return;
+    }
+
+    // Call the forgot password logic from useLogin
+    await forgotPassword(forgotPasswordEmail);
+    setShowForgotPasswordModal(false); // Close the modal after submission
   };
 
   // Google sign-in success handler
@@ -41,7 +55,7 @@ const Login = () => {
     <>
       <NavbarAuth />
       <div className="flex flex-col items-center justify-center min-w-[484px] mx-auto py-8 px-4 mt-24">
-        <div className=" w-full max-w-md p-8 rounded-xl shadow-lg bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-0 border border-gray-600 transition-all duration-300 ease-in-out hover:bg-gray-850 hover:shadow-2xl hover:border-yellow-400">
+        <div className="w-full max-w-md p-8 rounded-xl shadow-lg bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-0 border border-gray-600 transition-all duration-300 ease-in-out hover:bg-gray-850 hover:shadow-2xl hover:border-yellow-400">
           <h1 className="text-3xl font-semibold text-center text-gray-300 mb-6">
             Login to{" "}
             <span className="text-blue-500 hover:text-red-400 transition-all duration-300 ease-in-out">
@@ -88,8 +102,9 @@ const Login = () => {
               </Link>
             </div>
 
-            <div>
+            <div className="flex justify-between">
               <button
+                type="submit"
                 className="btn btn-block btn-sm mt-4 transition-all duration-300 ease-in-out hover:bg-blue-400 hover:text-blue-800"
                 disabled={loading}
               >
@@ -97,6 +112,7 @@ const Login = () => {
               </button>
             </div>
           </form>
+
           {/* Google Sign-In Button */}
           <div className="mt-4">
             <p className="text-center mb-4">Or sign up with Google</p>
@@ -106,9 +122,47 @@ const Login = () => {
               useOneTap
             />
           </div>
+
+          {/* Forgot Password Link (now below Google Sign-In) */}
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-sm hover:underline hover:text-blue-600">
+              Forgot Password?
+            </Link>
+          </div>
         </div>
       </div>
 
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div className="forgot-password-modal">
+          <div className="modal-content">
+            <h3>Forgot Password</h3>
+            <form onSubmit={handleForgotPasswordSubmit}>
+              <div>
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div className="mt-4">
+                <button type="submit" className="btn">
+                  Send Reset Link
+                </button>
+              </div>
+            </form>
+            <button
+              onClick={() => setShowForgotPasswordModal(false)}
+              className="btn mt-2"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
