@@ -147,7 +147,7 @@ export const forgotPassword = async (req, res) => {
     await user.save();
 
     // Generate reset URL
-	const resetUrl = `http://localhost:4001/reset-password/${encodeURIComponent(resetToken)}`;
+	const resetUrl = `http://localhost:3000/reset-password/${encodeURIComponent(resetToken)}`;
 	await passResetMail(user.username, user.fullName, resetUrl);
 
     res.status(200).json({ message: "Password reset link sent to your email." });

@@ -2,7 +2,7 @@
 {/* ForgotPassword.js */}
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../../components/Navbar/navbar";
+import NavbarAuth from '../../components/Navbar/navAuth';
 import useForgotPassword from "../../hooks/useForgotPassword";
 import toast from "react-hot-toast";
 
@@ -24,7 +24,7 @@ const ForgotPassword = () => {
 
   return (
     <>
-      <Navbar />
+      <NavbarAuth />
       <div className="flex flex-col items-center justify-center min-w-[484px] mx-auto py-8 px-4 mt-24">
         <div className="w-full max-w-md p-8 rounded-xl shadow-lg bg-gray-400 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-0 border border-gray-600 transition-all duration-300 ease-in-out hover:bg-gray-850 hover:shadow-2xl hover:border-yellow-400">
           <h1 className="text-3xl font-semibold text-center text-gray-300 mb-6">

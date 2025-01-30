@@ -15,8 +15,8 @@ router.post("/logout", logout);
 
 // Password reset routes
 router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
-router.get("/reset-password/:token", resetPasswordPage);
+router.post("/reset-password/:token", resetPassword);
+router.get('/reset-password/:token', resetPasswordPage);
 
 // Google OAuth callback route
 router.post("/google/callback", async (req, res) => {
