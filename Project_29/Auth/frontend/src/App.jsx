@@ -5,6 +5,7 @@ import ForgotPassword from "./pages/login/forgot-password";
 import ResetPassword from "./pages/login/reset-password";
 import Login from "./pages/login/Login";
 import SignUp from "./pages/signup/SignUp";
+import ProfilePage from "./pages/Profile/Profile";
 import { Toaster } from "react-hot-toast";
 import { useAuthContext } from "./context/AuthContext";
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -19,8 +20,9 @@ function App() {
           <Route path="/" element={authUser ? <Home /> : <Navigate to="/login" />} />
           <Route path="/login" element={authUser ? <Navigate to="/" /> : <Login />} />
           <Route path="/signup" element={authUser ? <Navigate to="/" /> : <SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />    
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
           </Routes>
         <Toaster />
       </div>

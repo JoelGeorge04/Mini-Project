@@ -3,7 +3,7 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
 import { useAuthContext } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom"; // To navigate after logout
+import { useNavigate } from "react-router-dom"; 
 
 const Navbar = () => {
   const { authUser, setAuthUser } = useAuthContext(); // Get authUser and setAuthUser from context
@@ -31,8 +31,8 @@ const Navbar = () => {
             BookMyResource
           </a>
           {authUser && (
-            <span className="text-gold text-lg margin-left:100px" style={{ marginLeft: '1070px', cursor:'pointer',display: 'block', textAlign: 'right' }}
-              onMouseEnter={(e) => (e.target.style.color = 'yellow')} 
+            <span className="text-gold text-lg margin-left:100px" style={{ marginLeft: '1070px', cursor: 'pointer', display: 'block', textAlign: 'right' }}
+              onMouseEnter={(e) => (e.target.style.color = 'yellow')}
               onMouseLeave={(e) => (e.target.style.color = 'white')} >{`${authUser.fullName}`}</span>
           )}
         </div>
@@ -49,7 +49,7 @@ const Navbar = () => {
               className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[4] mt-3 w-52 p-2 shadow"
             >
               <li>
-                <a className="justify-between">
+                <a className="justify-between cursor-pointer" onClick={() => navigate("/profile")}>
                   Profile
                   <span className="badge">New</span>
                 </a>
