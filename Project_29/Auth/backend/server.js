@@ -4,12 +4,11 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
-import messageRoutes from "./routes/message.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import session from 'express-session';
 import passport from './config/passport.js';
 
-import connectToMongoDB from "./db/connectToMongoDB.js";
+import { connectDB } from "./config/db/connectToPostgressql.js";
 import { app, server } from "./socket/socket.js";
 
 dotenv.config();
@@ -28,14 +27,14 @@ app.use((req, res, next) => {
 
 app.use(
 	cors({
-	  origin: 'http://localhost:3000',
-	  methods: ['GET', 'POST'],
-	  credentials: true,  // Allow cookies to be sent in requests
+		origin: 'http://localhost:3000',
+		methods: ['GET', 'POST'],
+		credentials: true,  // Allow cookies to be sent in requests
 	})
-  );
-  app.use(
+);
+app.use(
 	session({
-		secret: process.env.SESSION_SECRET || 'your-secret',  // Secret key for sessions
+		secret: process.env.SESSION_SECRET,
 		resave: false,
 		saveUninitialized: true,
 	})
@@ -45,7 +44,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use("/api/auth", authRoutes);
-app.use("/api/messages", messageRoutes);
 app.use("/api/users", userRoutes);
 
 app.use(express.static(path.join(__dirname, "/frontend/dist")));
@@ -55,6 +53,6 @@ app.get("*", (req, res) => {
 });
 
 server.listen(PORT, () => {
-	connectToMongoDB();
+	connectDB();
 	console.log(`Server Running on port ${PORT}`);
 });

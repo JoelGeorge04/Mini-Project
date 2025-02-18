@@ -1,5 +1,3 @@
-// Navbar.js
-
 // eslint-disable-next-line no-unused-vars
 import React from "react";
 import { useAuthContext } from "../../context/AuthContext";

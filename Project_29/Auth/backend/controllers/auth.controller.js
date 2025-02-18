@@ -1,154 +1,159 @@
 import User from "../models/user.model.js";
+import crypto from "crypto";
+import { Op } from "sequelize";
 import generateTokenAndSetCookie from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
 import { oauth2Client } from "../utils/googleOAuth.js";
 import sendEmail from "../utils/sendMail.js";
 import passResetMail from '../utils/passResetMail.js';
 
-
-// Signup user
+// User Signup
 export const signup = async (req, res) => {
-	try {
-		const { fullName, username, password, confirmPassword } = req.body;
+  try {
+    const { fullName, username, password, confirmPassword } = req.body;
 
-		if (password !== confirmPassword) {
-			return res.status(400).json({ error: "Passwords don't match" });
-		}
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
 
-		const user = await User.findOne({ username });
+    const existingUser = await User.findOne({ where: { username } });
 
-		if (user) {
-			return res.status(400).json({ error: "User already exists" });
-		}
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
 
-		const salt = await bcrypt.genSalt(10);
-		const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const profilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
 
-		const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
+    const newUser = await User.create({
+      fullName,
+      username,
+      password: hashedPassword,
+      profilePic,
+    });
 
-		const newUser = new User({
-			fullName,
-			username,
-			password: hashedPassword,
-			profilePic: boyProfilePic,
-		});
+    generateTokenAndSetCookie(newUser.id, res);
 
-		if (newUser) {
-			generateTokenAndSetCookie(newUser._id, res);
+    await sendEmail(newUser.username, newUser.fullName);
 
-			await newUser.save();
-
-			// Send a welcome email
-			await sendEmail(newUser.username, newUser.fullName);
-
-			res.status(201).json({
-				_id: newUser._id,
-				fullName: newUser.fullName,
-				username: newUser.username,
-				profilePic: newUser.profilePic,
-			});
-		} else {
-			res.status(400).json({ error: "Invalid user data" });
-		}
-	} catch (error) {
-		console.log("Error in signup controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+    res.status(201).json({
+      id: newUser.id,
+      fullName: newUser.fullName,
+      username: newUser.username,
+      profilePic: newUser.profilePic,
+    });
+  } catch (error) {
+    console.error("Signup Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-// Login Controller
+// User Login
 export const login = async (req, res) => {
-	try {
-		const { username, password } = req.body;
-		const user = await User.findOne({ username });
-		const isPasswordCorrect = await bcrypt.compare(password, user?.password || "");
+  try {
+    const { username, password } = req.body;
+    
+    // Fetch user from database
+    const user = await User.findOne({ where: { username } });
 
-		if (!user || !isPasswordCorrect) {
-			return res.status(400).json({ error: "Invalid username or password" });
-		}
+    if (!user || !user.password) {
+      return res.status(400).json({ error: "Invalid username or password" });
+    }
 
-		generateTokenAndSetCookie(user._id, res);
+    console.log("Stored Hashed Password (Login):", user.password);
+    console.log("Entered Password:", password);
 
-		res.status(200).json({
-			_id: user._id,
-			fullName: user.fullName,
-			username: user.username,
-			profilePic: user.profilePic,
-		});
-	} catch (error) {
-		console.error("Error in login controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+    // Compare password with hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password Match:", isMatch);
+
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid username or password" });
+    }
+
+    generateTokenAndSetCookie(user.id, res);
+
+    res.status(200).json({
+      id: user.id,
+      fullName: user.fullName,
+      username: user.username,
+      profilePic: user.profilePic,
+    });
+  } catch (error) {
+    console.error("Login Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-// Logout user
+// Logout
 export const logout = (req, res) => {
-	try {
-		res.cookie("jwt", "", { maxAge: 0 });
-		res.status(200).json({ message: "Logged out successfully" });
-	} catch (error) {
-		console.log("Error in logout controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+  try {
+    res.cookie("jwt", "", { maxAge: 0 });
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-
-// Google login/signup 
-export const handleGoogleOAuth = async (token, res) => {
+//Google Account
+export const handleGoogleOAuth = async (token) => {
 	try {
+		console.log("Received Google OAuth token:", token);
+
 		const ticket = await oauth2Client.verifyIdToken({
 			idToken: token,
 			audience: process.env.GOOGLE_CLIENT_ID,
 		});
 
-		const payload = ticket.getPayload();
+		if (!ticket) {
+			console.error("Google Token Verification Failed");
+			throw new Error("Invalid Google Token");
+		}
 
-		// Check if the user already exists based on Google ID or email (username)
-		let user = await User.findOne({ $or: [{ googleId: payload.sub }, { username: payload.email }] });
+		const payload = ticket.getPayload();
+		console.log("Google Payload:", payload);
+
+		let user = await User.findOne({ where: { username: payload.email } });
 
 		if (!user) {
-			user = new User({
+			user = await User.create({
 				googleId: payload.sub,
 				fullName: payload.name,
 				username: payload.email,
 				profilePic: payload.picture,
 			});
-
-			// Send a welcome email to the new user logged in via Google
 			await sendEmail(user.username, user.fullName);
-			await user.save();
 		}
 
-		// Generate token and set the cookie
-		const jwtToken = generateTokenAndSetCookie(user._id, res);
+		const jwtToken = generateTokenAndSetCookie(user.id); 
 
+		// Return data instead of sending a response
 		return { user, jwtToken };
+
 	} catch (error) {
-		throw new Error("Internal server error");
+		console.error("Google OAuth Error:", error.message);
+		throw new Error("Internal Server Error");
 	}
 };
 
-// Forgot Password
+//forgot password
 export const forgotPassword = async (req, res) => {
   try {
     const { username } = req.body;
+    const user = await User.findOne({ where: { username } });
 
-    const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Generate reset token and expiry
-    const resetToken = generateTokenAndSetCookie(user._id, res, 15 * 60); // 15 minutes
-    const resetTokenExpiry = Date.now() + 15 * 60 * 1000; // Set expiry
+    const resetToken = crypto.randomBytes(32).toString("hex"); // Generate secure token
+    const resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes expiry
 
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = resetTokenExpiry;
-    await user.save();
+    await user.update({ resetToken, resetTokenExpiry });
 
-    // Generate reset URL
-	const resetUrl = `http://localhost:3000/reset-password/${encodeURIComponent(resetToken)}`;
-	await passResetMail(user.username, user.fullName, resetUrl);
+    const resetUrl = `http://localhost:3000/reset-password/${encodeURIComponent(resetToken)}`;
+    await passResetMail(user.username, user.fullName, resetUrl);
 
     res.status(200).json({ message: "Password reset link sent to your email." });
   } catch (error) {
@@ -162,21 +167,27 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
 
+    // Find the user with the valid reset token
     const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }, // Check if token is valid
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: { [Op.gt]: Date.now() }, // Ensure token is still valid
+      },
     });
 
     if (!user) {
       return res.status(400).json({ error: "Invalid or expired token" });
     }
 
+    // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
 
-    await user.save();
+    // Update user password and remove reset fields
+    user.password = hashedPassword;
+    user.resetPasswordToken = null; 
+    user.resetPasswordExpires = null; 
+
+    await user.save(); 
 
     res.status(200).json({ message: "Password reset successful." });
   } catch (error) {
@@ -187,11 +198,11 @@ export const resetPassword = async (req, res) => {
 
 // Validate Reset Token
 export const resetPasswordPage = async (req, res) => {
-  const { token } = req.params;
   try {
+    const { token } = req.params;
+
     const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
+      where: { resetToken: token, resetTokenExpiry: { [Op.gt]: Date.now() } },
     });
 
     if (!user) {

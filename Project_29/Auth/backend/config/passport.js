@@ -1,10 +1,10 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import jwt from "jsonwebtoken";
+import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import dotenv from "dotenv";
 import User from "../models/user.model.js";
 
-dotenv.config(); // Load environment variables from .env file
+dotenv.config();
 
 // Google OAuth Strategy
 passport.use(
@@ -12,31 +12,23 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:4001/api/auth/google/callback", // Backend callback URL
+      callbackURL: "/api/auth/google/callback",
     },
-    async (accessToken, _refreshToken, profile, done) => {
+    async (accessToken, refreshToken, profile, done) => {
       try {
-        const { id, displayName, emails, photos } = profile;
-        const email = emails[0].value;
+        let user = await User.findOne({ where: { googleId: profile.id } });
 
-        // Find or create user in the database
-        let user = await User.findOne({ googleId: id });
         if (!user) {
-          user = new User({
-            googleId: id,
-            fullName: displayName,
-            username: email,
-            profilePic: photos[0]?.value,
+          user = await User.create({
+            googleId: profile.id,
+            fullName: profile.displayName,
+            username: profile.emails[0].value,
+            profilePic: profile.photos[0].value,
+            password: null, // No password for OAuth users
           });
-          await user.save();
         }
 
-        // Generate JWT token after successful login
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-          expiresIn: "15d", // Set token expiry
-        });
-
-        return done(null, { user, token }); // Return user and token in the done callback
+        return done(null, user);
       } catch (error) {
         return done(error, null);
       }
@@ -44,15 +36,34 @@ passport.use(
   )
 );
 
-// Serialize user (store user ID in session or JWT token)
+// JWT Authentication Strategy
+const jwtOptions = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: process.env.JWT_SECRET, // Secret key for JWT
+};
+
+passport.use(
+  new JwtStrategy(jwtOptions, async (jwtPayload, done) => {
+    try {
+      const user = await User.findByPk(jwtPayload.id);
+      if (!user) {
+        return done(null, false);
+      }
+      return done(null, user);
+    } catch (error) {
+      return done(error, false);
+    }
+  })
+);
+
+// Serialize and Deserialize User
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-// Deserialize user (find user by ID and attach to the request)
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    const user = await User.findByPk(id);
     done(null, user);
   } catch (error) {
     done(error, null);

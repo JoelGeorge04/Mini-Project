@@ -18,20 +18,23 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.get('/reset-password/:token', resetPasswordPage);
 
-// Google OAuth callback route
 router.post("/google/callback", async (req, res) => {
   const { token } = req.body;
 
   try {
-    const { user, jwtToken } = await handleGoogleOAuth(token, res);
+    const { user, jwtToken } = await handleGoogleOAuth(token);
 
-    // Send the response after OAuth processing
-    res.json({ user, jwtToken });
+    return res.json({ message: "Google authentication successful", user, jwtToken });
+
   } catch (error) {
     console.error("Error during Google OAuth callback:", error.message);
-    res.status(500).json({ error: "Internal server error" });
+
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Internal server error" });
+    }
   }
 });
+
 
 export default router;
   

@@ -9,6 +9,8 @@ const useSignup = () => {
   const navigate = useNavigate();
 
   const signup = async ({ fullName, username, password, confirmPassword }) => {
+    if (loading) return; // Prevent duplicate requests
+
     const success = handleInputErrors({ fullName, username, password, confirmPassword });
     if (!success) return;
 
@@ -20,15 +22,25 @@ const useSignup = () => {
         body: JSON.stringify({ fullName, username, password, confirmPassword }),
       });
 
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
+      if (!res.ok) {
+        throw new Error(`Signup failed: ${res.status} ${res.statusText}`);
       }
+
+      const data = await res.json().catch(() => {
+        throw new Error("Invalid server response");
+      });
+
+      if (!data || data.error) {
+        throw new Error(data?.error || "Unknown error occurred during signup.");
+      }
+
       localStorage.setItem("user", JSON.stringify(data));
       setAuthUser(data);
-      navigate("/"); // Navigate to home or any other page
+      navigate("/");
+      toast.success("Signup successful!");
     } catch (error) {
-      toast.error(error.message);
+      console.error("Signup Error:", error);
+      toast.error(error.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -36,6 +48,9 @@ const useSignup = () => {
 
   // Google login process
   const googleSignup = async (token) => {
+    if (loading) return; // Prevent duplicate requests
+
+    setLoading(true);
     try {
       const res = await fetch("/api/auth/google/callback", {
         method: "POST",
@@ -44,16 +59,30 @@ const useSignup = () => {
         },
         body: JSON.stringify({ token }),
       });
-  
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
+
+      if (!res.ok) {
+        throw new Error(`Google Auth failed: ${res.status} ${res.statusText}`);
       }
+
+      const text = await res.text();
+      if (!text) {
+        throw new Error("Empty response from server.");
+      }
+
+      const data = JSON.parse(text);
+      if (!data.user) {
+        throw new Error("User data missing in response.");
+      }
+
       localStorage.setItem("user", JSON.stringify(data.user));
       setAuthUser(data.user);
-      navigate("/"); 
+      navigate("/");
+      toast.success("Google login successful!");
     } catch (error) {
       console.error("Google login error:", error);
+      toast.error("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,17 +94,17 @@ export default useSignup;
 // Input validation
 function handleInputErrors({ fullName, username, password, confirmPassword }) {
   if (!fullName || !username || !password || !confirmPassword) {
-    toast.error("Please fill in all fields");
+    toast.error("All fields are required.");
     return false;
   }
 
   if (password !== confirmPassword) {
-    toast.error("Passwords do not match");
+    toast.error("Passwords do not match.");
     return false;
   }
 
   if (password.length < 6) {
-    toast.error("Password must be at least 6 characters");
+    toast.error("Password must be at least 6 characters.");
     return false;
   }
 

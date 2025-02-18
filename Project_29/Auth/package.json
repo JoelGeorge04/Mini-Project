@@ -16,7 +16,7 @@
 		"bcryptjs": "^2.4.3",
 		"cookie-parser": "^1.4.7",
 		"crypto-browserify": "^3.12.1",
-		"dotenv": "^16.4.1",
+		"dotenv": "^16.4.7",
 		"express": "^4.18.2",
 		"express-session": "^1.18.1",
 		"google-auth-library": "^9.15.0",
@@ -26,6 +26,10 @@
 		"nodemailer": "^6.9.16",
 		"passport": "^0.7.0",
 		"passport-google-oauth20": "^2.0.0",
+		"passport-jwt": "^4.0.1",
+		"pg": "^8.13.2",
+		"pg-hstore": "^2.3.4",
+		"sequelize": "^6.37.5",
 		"socket.io": "^4.7.4"
 	},
 	"devDependencies": {

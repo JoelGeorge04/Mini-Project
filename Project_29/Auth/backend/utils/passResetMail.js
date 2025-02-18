@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
+dotenv.config(); 
 // Function to send password reset email
 const passResetMail = async (email, name, resetUrl) => {
   // Create a transporter object using the default SMTP transport

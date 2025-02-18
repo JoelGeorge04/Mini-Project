@@ -1,45 +1,48 @@
-import mongoose from "mongoose";
+import { DataTypes } from "sequelize";
+import sequelize from "../config/db/connectToPostgressql.js";
 
-const userSchema = new mongoose.Schema(
+const User = sequelize.define(
+  "User",
   {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
     googleId: {
-      type: String,
+      type: DataTypes.STRING, 
       unique: true,
-      required: function () {
-        return !this.password; // googleId is required only if no password is provided
-      },
+      allowNull: true, // Allow null if user signs up without Google
     },
     fullName: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     username: {
-      type: String,
-      required: true,
-      unique: true, // Ensure unique usernames
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
     profilePic: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     password: {
-      type: String,
-      required: function () {
-        return !this.googleId; // Password is required only if no googleId is provided
-      },
+      type: DataTypes.STRING,
+      allowNull: true, // Allow null for OAuth users
     },
     resetPasswordToken: {
-      type: String,
-      default: null, // Token for password reset
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     resetPasswordExpires: {
-      type: Date,
-      default: null, // Expiry time for the reset token
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
-
-const User = mongoose.model("User", userSchema);
 
 export default User;
