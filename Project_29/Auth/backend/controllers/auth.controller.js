@@ -165,29 +165,30 @@ export const forgotPassword = async (req, res) => {
 // Reset Password
 export const resetPassword = async (req, res) => {
   try {
-    const { token, password } = req.body;
+    const { username, token, password } = req.body;
 
-    // Find the user with the valid reset token
+    // Find the user with the given username and reset token
     const user = await User.findOne({
       where: {
-        resetPasswordToken: token,
-        resetPasswordExpires: { [Op.gt]: Date.now() }, // Ensure token is still valid
+        username,
+        resetToken: token,
+        resetTokenExpiry: { [Op.gt]: Date.now() }, // Ensure token is still valid
       },
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Invalid or expired token" });
+      return res.status(400).json({ error: "Invalid username or expired token" });
     }
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update user password and remove reset fields
-    user.password = hashedPassword;
-    user.resetPasswordToken = null; 
-    user.resetPasswordExpires = null; 
-
-    await user.save(); 
+    await user.update({
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+    });
 
     res.status(200).json({ message: "Password reset successful." });
   } catch (error) {
